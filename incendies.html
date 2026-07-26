@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Suivi Incendies - Analyse des Foyers Thermiques</title>
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link rel="stylesheet" href="incendies.css" />
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div
+      class="last-update-banner"
+      id="last-update-banner"
+      style="display: none"
+    >
+      <span>🛰️ Statut Thermique :</span>
+      <span class="time-badge" id="last-update-text">--/--/-- à --:--</span>
+    </div>
+
+    <div class="info-card">
+      <h3>🇪🇺 Analyse des Foyers</h3>
+      <div class="status-container">
+        <div id="loader" class="spinner"></div>
+        <div class="status-text" id="status">Initialisation...</div>
+      </div>
+      <button class="btn" id="btn-reload">Actualiser les flux</button>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="dot dot-active"></span> Actif (&lt;12h)
+        </div>
+        <div class="legend-item">
+          <span class="dot dot-medium"></span> Atténué (12-36h)
+        </div>
+        <div class="legend-item">
+          <span class="dot dot-old"></span> Ancien (&gt;36h)
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini-terminal de suivi des appels API -->
+    <div class="terminal-log" id="terminal-log" style="display: none"></div>
+
+    <div class="timeline-card" id="timeline-panel" style="display: none">
+      <div class="timeline-header">
+        <span>⏱️ Chronologie</span>
+        <div class="time-display" id="time-display">--/--/-- --:--</div>
+      </div>
+      <div class="timeline-controls">
+        <button class="btn-play" id="btn-play">▶ Jouer</button>
+        <input
+          type="range"
+          id="time-slider"
+          class="slider"
+          min="0"
+          max="0"
+          value="0"
+        />
+      </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="incendies.js"></script>
+  </body>
+</html>
