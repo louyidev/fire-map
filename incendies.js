@@ -417,14 +417,29 @@ function renderStep(index) {
 // ------------------------------------------------------------------
 function startPulse() {
   if (pulseInterval) return;
+
+  let phase = 0;
+
   pulseInterval = setInterval(() => {
-    pulseOn = !pulseOn;
+    phase += 0.25;
+
+    const glowScale = 1 + Math.sin(phase) * 0.25;
+    const glowOpacity = 0.20 + (Math.sin(phase) + 1) * 0.18;
+    const coreScale = 1 + Math.sin(phase + 0.8) * 0.08;
+
     activeMarkers.forEach((fire) => {
-      if (fire.glowMarker) {
-        fire.glowMarker.setStyle({ fillOpacity: pulseOn ? 0.5 : 0.15 });
-      }
+      if (!fire.marker || !fire.glowMarker) return;
+
+      const baseRadius = radiusFor("active", fire.frp);
+
+      fire.marker.setRadius(baseRadius * coreScale);
+      fire.glowMarker.setRadius((baseRadius + 5) * glowScale);
+      fire.glowMarker.setStyle({
+        fillOpacity: glowOpacity
+      });
     });
-  }, 550);
+
+  }, 40); // ~25 FPS
 }
 
 function stopAnimation() {
