@@ -16,7 +16,7 @@ function termScheduleHide() {
   clearTimeout(termHideTimer);
   termHideTimer = setTimeout(() => {
     termLogEl.style.display = "none";
-  }, 5000);
+  });
 }
 
 function termLog(message) {
@@ -181,7 +181,9 @@ async function loadMultiSatelliteData() {
   const statusEl = document.getElementById("status");
   const loaderEl = document.getElementById("loader");
   const btnReload = document.getElementById("btn-reload");
+  const banner = document.getElementById("last-update-banner");
 
+  banner.style.display = "none";
   loaderEl.style.display = "block";
   btnReload.disabled = true;
 
@@ -257,9 +259,13 @@ async function loadMultiSatelliteData() {
     applyMapView();
 
     initTimeline();
+    const lastUpdateText = document.getElementById("last-update-text");
+    lastUpdateText.textContent = timeSteps[timeSteps.length - 1].label;
+    banner.style.display = "flex";
+    
   } catch (err) {
     console.error("Erreur chargement incendies :", err);
-
+    banner.style.display = "none";
     statusEl.innerText = "❌ Erreur de chargement.";
 
     termLog("Erreur globale de chargement.");
