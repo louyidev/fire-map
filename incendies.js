@@ -262,7 +262,6 @@ async function loadMultiSatelliteData() {
     const lastUpdateText = document.getElementById("last-update-text");
     lastUpdateText.textContent = timeSteps[timeSteps.length - 1].label;
     banner.style.display = "flex";
-    
   } catch (err) {
     console.error("Erreur chargement incendies :", err);
     banner.style.display = "none";
@@ -310,21 +309,66 @@ function categoryFor(ageInHours) {
 }
 
 const STYLES = {
-  active: {
-    fillColor: "#f59e0b",
-    color: "#ef4444",
+  // 0-3 h : cœur extrêmement chaud
+  c1: {
+    fillColor: "#fff200",
+    color: "#ffffff",
+    fillOpacity: 1,
+    weight: 3,
+  },
+
+  // 3-6 h
+  c2: {
+    fillColor: "#ffd000",
+    color: "#ffef9f",
+    fillOpacity: 0.98,
+    weight: 3,
+  },
+
+  // 6-12 h
+  c3: {
+    fillColor: "#ff9800",
+    color: "#ff5e00",
     fillOpacity: 0.95,
     weight: 3,
   },
-  medium: {
-    fillColor: "#991b1b",
-    color: "#450a0a",
+
+  // 12-24 h
+  c4: {
+    fillColor: "#ff5c00",
+    color: "#d62828",
+    fillOpacity: 0.9,
+    weight: 2,
+  },
+
+  // 24-36 h
+  c5: {
+    fillColor: "#d62828",
+    color: "#8b0000",
+    fillOpacity: 0.8,
+    weight: 2,
+  },
+
+  // 36-48 h
+  c6: {
+    fillColor: "#8b0000",
+    color: "#4a0404",
+    fillOpacity: 0.65,
+    weight: 2,
+  },
+
+  // 48-72 h
+  c7: {
+    fillColor: "#4a0404",
+    color: "#1f1f1f",
     fillOpacity: 0.45,
     weight: 1,
   },
-  old: {
-    fillColor: "#451a03",
-    color: "#1c0a00",
+
+  // >72 h
+  c8: {
+    fillColor: "#202020",
+    color: "#000000",
     fillOpacity: 0.25,
     weight: 1,
   },
@@ -407,20 +451,28 @@ function renderStep(index) {
 
     // Halo lumineux léger, uniquement pour les foyers actifs :
     // deux cercles canvas au lieu d'un filtre CSS (beaucoup moins cher au rendu).
-    if (category === "active" && !fire.glowMarker) {
+    if (isHotFire(category) && !fire.glowMarker) {
       fire.glowMarker = L.circleMarker([fire.lat, fire.lng], {
         renderer: canvasRenderer,
-        radius: radius + 4,
-        fillColor: "#f5690b",
+        radius: radius + 6,
+
+        fillColor: category === "c1" ? "#ffff00" : "#ff4500",
+
         color: "transparent",
-        fillOpacity: 0.35,
+
+        fillOpacity: category === "c1" ? 0.55 : 0.35,
+
         weight: 0,
       }).addTo(fireLayerGroup);
+
       fire.glowMarker.bringToBack();
+
       activeMarkers.add(fire);
-    } else if (category !== "active" && fire.glowMarker) {
+    } else if (!isHotFire(category) && fire.glowMarker) {
       fireLayerGroup.removeLayer(fire.glowMarker);
+
       fire.glowMarker = null;
+
       activeMarkers.delete(fire);
     }
 
@@ -450,12 +502,19 @@ function startPulse() {
     const coreScale = 1 + Math.sin(phase + 0.8) * 0.08;
 
     activeMarkers.forEach((fire) => {
-      if (!fire.marker || !fire.glowMarker) return;
+      if (!fire.marker || !fire.glowMarker) {
+        return;
+      }
 
-      const baseRadius = radiusFor("active", fire.frp);
+      // On garde la taille liée à l'âge réel du feu
+      const baseRadius = radiusFor(fire.category, fire.frp);
 
+      // Le point central pulse légèrement
       fire.marker.setRadius(baseRadius * coreScale);
+
+      // Le halo pulse davantage
       fire.glowMarker.setRadius((baseRadius + 5) * glowScale);
+
       fire.glowMarker.setStyle({
         fillOpacity: glowOpacity,
       });
@@ -537,5 +596,51 @@ function applyMapView() {
       animate: true,
       maxZoom: 7,
     });
+  }
+}
+
+function categoryFor(ageInHours) {
+  if (ageInHours <= 3) return "c1";
+  if (ageInHours <= 6) return "c2";
+  if (ageInHours <= 12) return "c3";
+  if (ageInHours <= 24) return "c4";
+  if (ageInHours <= 36) return "c5";
+  if (ageInHours <= 48) return "c6";
+  if (ageInHours <= 72) return "c7";
+
+  return "c8";
+}
+
+function isHotFire(category) {
+  return ["c1", "c2", "c3"].includes(category);
+}
+
+function radiusFor(category, frp) {
+  const baseRadius = Math.min(Math.max(frp * 0.45, 7), 18);
+
+  switch (category) {
+    case "c1":
+      return baseRadius;
+
+    case "c2":
+      return baseRadius - 1;
+
+    case "c3":
+      return baseRadius - 2;
+
+    case "c4":
+      return 7;
+
+    case "c5":
+      return 6;
+
+    case "c6":
+      return 5;
+
+    case "c7":
+      return 4;
+
+    default:
+      return 3;
   }
 }
