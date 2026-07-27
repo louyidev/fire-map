@@ -302,11 +302,6 @@ function initTimeline() {
 // ------------------------------------------------------------------
 // 3) Détermination de catégorie visuelle selon l'âge du foyer.
 // ------------------------------------------------------------------
-function categoryFor(ageInHours) {
-  if (ageInHours <= 12) return "active";
-  if (ageInHours <= 36) return "medium";
-  return "old";
-}
 
 const STYLES = {
   // 0-3 h : cœur extrêmement chaud
@@ -373,11 +368,6 @@ const STYLES = {
     weight: 1,
   },
 };
-
-function radiusFor(category, frp) {
-  if (category === "active") return Math.min(Math.max(frp * 0.5, 8), 18);
-  return category === "medium" ? 4 : 3;
-}
 
 function popupHtml(fire, category) {
   const statusLabel = {
