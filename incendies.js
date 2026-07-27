@@ -53,29 +53,29 @@ const map = L.map("map", {
 });
 
 const satelliteLayer = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 19,
-    attribution: 'Tiles &copy; Esri',
-  }
+    attribution: "Tiles &copy; Esri",
+  },
 ).addTo(map);
 
 const roadsLayer = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 19,
-    attribution: 'Labels &copy; Esri',
-    pane: 'overlayPane',
-  }
+    attribution: "Labels &copy; Esri",
+    pane: "overlayPane",
+  },
 ).addTo(map);
 
 const placesLayer = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
   {
     maxZoom: 19,
-    attribution: 'Labels &copy; Esri',
-    pane: 'overlayPane',
-  }
+    attribution: "Labels &copy; Esri",
+    pane: "overlayPane",
+  },
 ).addTo(map);
 
 const fireLayerGroup = L.layerGroup().addTo(map);
@@ -184,10 +184,11 @@ async function loadMultiSatelliteData() {
 
   loaderEl.style.display = "block";
   btnReload.disabled = true;
+
   statusEl.innerText = "Interrogation satellites...";
   termLog("--- Nouvelle actualisation ---");
 
-  const bbox = "-2.5,43.0,1.0,46.0";
+  const bbox = "-5.5,41.0,9.8,51.5";
   const days = "5";
 
   const sources = [
@@ -210,48 +211,63 @@ async function loadMultiSatelliteData() {
       sources.map((src) => fetchCsvSource(src.url, src.name)),
     );
 
-    // Réinitialisation complète : on repart d'un état propre.
     stopAnimation();
+
     fireLayerGroup.clearLayers();
     activeMarkers.clear();
+
     allFires = results.flat();
+
     currentStepIndex = -1;
 
     if (allFires.length === 0) {
       statusEl.innerText = "⚠️ Aucun point détecté.";
+
       termLog("Aucun point détecté au total.");
+
       return;
     }
 
-    // Tri unique par date : indispensable pour le rendu incrémental.
+    // Tri chronologique
     allFires.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Un pas de temps par date/heure de relevé distincte.
+    // Création des étapes temporelles
     const seen = new Map();
+
     for (const fire of allFires) {
       if (!seen.has(fire.formattedDateTime)) {
         seen.set(fire.formattedDateTime, fire.timestamp);
       }
     }
+
     timeSteps = Array.from(seen, ([label, timestamp]) => ({
       label,
       timestamp,
     })).sort((a, b) => a.timestamp - b.timestamp);
 
     statusEl.innerText = `✅ ${allFires.length} relevés`;
+
     termLog(`Total : ${allFires.length} relevés fusionnés.`);
 
-    const bounds = L.latLngBounds(allFires.map((f) => [f.lat, f.lng]));
-    map.fitBounds(bounds, { padding: [30, 30] });
+    // ---------------------------------------------------------
+    // Position initiale :
+    // Lacanau - Bassin d'Arcachon - Bordeaux
+    // ---------------------------------------------------------
+
+    applyMapView();
 
     initTimeline();
   } catch (err) {
-    console.error(err);
+    console.error("Erreur chargement incendies :", err);
+
     statusEl.innerText = "❌ Erreur de chargement.";
+
     termLog("Erreur globale de chargement.");
   } finally {
     loaderEl.style.display = "none";
+
     btnReload.disabled = false;
+
     termScheduleHide();
   }
 }
@@ -421,10 +437,10 @@ function startPulse() {
   let phase = 0;
 
   pulseInterval = setInterval(() => {
-    phase += 0.25;
+    phase += 0.3;
 
     const glowScale = 1 + Math.sin(phase) * 0.25;
-    const glowOpacity = 0.20 + (Math.sin(phase) + 1) * 0.18;
+    const glowOpacity = 0.2 + (Math.sin(phase) + 1) * 0.18;
     const coreScale = 1 + Math.sin(phase + 0.8) * 0.08;
 
     activeMarkers.forEach((fire) => {
@@ -435,10 +451,9 @@ function startPulse() {
       fire.marker.setRadius(baseRadius * coreScale);
       fire.glowMarker.setRadius((baseRadius + 5) * glowScale);
       fire.glowMarker.setStyle({
-        fillOpacity: glowOpacity
+        fillOpacity: glowOpacity,
       });
     });
-
   }, 40); // ~25 FPS
 }
 
@@ -486,4 +501,35 @@ window.addEventListener("load", () => {
     map.invalidateSize();
     loadMultiSatelliteData();
   }, 300);
+
+  // Changement de cadrage carte
+  document
+    .getElementById("view-gironde")
+    .addEventListener("change", applyMapView);
+
+  document
+    .getElementById("view-france")
+    .addEventListener("change", applyMapView);
 });
+
+function applyMapView() {
+  const girondeSelected = document.getElementById("view-gironde").checked;
+
+  if (girondeSelected) {
+    const zoneGironde = L.latLngBounds([44.5, -1.2], [44.95, -0.4]);
+
+    map.fitBounds(zoneGironde, {
+      padding: [20, 20],
+      animate: true,
+      maxZoom: 10,
+    });
+  } else {
+    const zoneFrance = L.latLngBounds([41.0, -5.5], [51.5, 9.8]);
+
+    map.fitBounds(zoneFrance, {
+      padding: [20, 20],
+      animate: true,
+      maxZoom: 7,
+    });
+  }
+}
